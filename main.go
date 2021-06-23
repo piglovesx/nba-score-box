@@ -54,7 +54,7 @@ func main() {
 	writer.Start()
 	defer writer.Stop()
 	print_data(readable_data, writer)
-	c := time.Tick(5 * time.Second)
+	c := time.Tick(15 * time.Second)
 	for range c {
 		print_data(readable_data, writer)
 	}
