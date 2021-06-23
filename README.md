@@ -5,3 +5,7 @@ Retrive score box info from nba.com
 It's convenient to watch scores from terminal.
 
 Enjoy!
+
+#### usage
+
+`go run main.go`
