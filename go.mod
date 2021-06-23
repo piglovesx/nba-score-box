@@ -1,4 +1,4 @@
-module github.com/piglovesx/nbascorebox
+module github.com/piglovesx/nba-score-box
 
 go 1.16
 
