@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gosuri/uilive"
+	"github.com/piglovesx/nba-score-box/playbyplay"
 )
 
 const nba_score_box_url string = "https://in.global.nba.com/stats2/scores/daily.json?countryCode=IN&locale=en&tz=%2B8"
@@ -27,10 +28,15 @@ type all_date struct {
 }
 
 type game struct {
-	Boxscore   boxscore `json:"boxscore"`
-	HomeTeam   team     `json:"homeTeam"`
-	AwayTeam   team     `json:"awayTeam"`
-	SeriesText string   `json:"seriesText"`
+	Boxscore   boxscore     `json:"boxscore"`
+	HomeTeam   team         `json:"homeTeam"`
+	AwayTeam   team         `json:"awayTeam"`
+	SeriesText string       `json:"seriesText"`
+	Profile    game_profile `json:"profile"`
+}
+
+type game_profile struct {
+	GameId string `json:"gameId"`
 }
 
 type boxscore struct {
@@ -50,23 +56,29 @@ type profile struct {
 
 func main() {
 	readable_data := &daily{}
+	pbps := []*playbyplay.Play_by_play{}
 	writer := uilive.New()
 	writer.Start()
 	defer writer.Stop()
-	print_data(readable_data, writer)
-	c := time.Tick(15 * time.Second)
+	print_data(readable_data, writer, pbps)
+	c := time.Tick(5 * time.Second)
 	for range c {
-		print_data(readable_data, writer)
+		print_data(readable_data, writer, pbps)
 	}
 }
 
-func print_data(readable_data *daily, writer *uilive.Writer) {
+func print_data(readable_data *daily, writer *uilive.Writer, pbps []*playbyplay.Play_by_play) {
 	retriveDailyData(readable_data)
-	for _, v := range readable_data.Payload.All_date.Games {
+	for i, v := range readable_data.Payload.All_date.Games {
+		if len(pbps) <= i {
+			pbps = append(pbps, &playbyplay.Play_by_play{})
+			playbyplay.RetrivePlayByPlay(v.Profile.GameId, v.Boxscore.Period, pbps[i])
+		}
 		if v.SeriesText != "" {
 			fmt.Fprintf(writer, "%s\n", v.SeriesText)
 		}
-		fmt.Fprintf(writer, "%s %d    -    %s %d  (Period:%s Time:%s)\n\n", v.AwayTeam.Profile.Abbr, v.Boxscore.AwayScore, v.HomeTeam.Profile.Abbr, v.Boxscore.HomeScore, v.Boxscore.Period, v.Boxscore.PeriodClock)
+		fmt.Fprintf(writer, "%s %d    -    %s %d  (Period:%s Time:%s)\n", v.AwayTeam.Profile.Abbr, v.Boxscore.AwayScore, v.HomeTeam.Profile.Abbr, v.Boxscore.HomeScore, v.Boxscore.Period, v.Boxscore.PeriodClock)
+		fmt.Fprintf(writer, "%s\n\n", pbps[i].Payload.PlayByPlays[0].Events[0].Description)
 	}
 }
 
