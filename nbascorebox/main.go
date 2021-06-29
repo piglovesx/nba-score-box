@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gosuri/uilive"
@@ -36,7 +37,8 @@ type game struct {
 }
 
 type game_profile struct {
-	GameId string `json:"gameId"`
+	GameId    string `json:"gameId"`
+	StartTime string `json:"utcMillis"`
 }
 
 type boxscore struct {
@@ -75,7 +77,8 @@ func print_data(readable_data *daily, writer *uilive.Writer, pbps []*playbyplay.
 			playbyplay.RetrivePlayByPlay(v.Profile.GameId, v.Boxscore.Period, pbps[i])
 		}
 		if v.SeriesText != "" {
-			fmt.Fprintf(writer, "%s\n", v.SeriesText)
+			temp, _ := strconv.Atoi(v.Profile.StartTime)
+			fmt.Fprintf(writer, "%s (%s)\n", v.SeriesText, time.Unix(0, int64(temp)*int64(time.Millisecond)).Format(time.Kitchen))
 		}
 		fmt.Fprintf(writer, "%s %d    -    %s %d  (Period:%s Time:%s)\n", v.AwayTeam.Profile.Abbr, v.Boxscore.AwayScore, v.HomeTeam.Profile.Abbr, v.Boxscore.HomeScore, v.Boxscore.Period, v.Boxscore.PeriodClock)
 		fmt.Fprintf(writer, "%s\n\n", pbps[i].Payload.PlayByPlays[0].Events[0].Description)
