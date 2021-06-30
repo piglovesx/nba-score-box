@@ -10,12 +10,12 @@ import (
 	"time"
 
 	"github.com/gosuri/uilive"
-	"github.com/piglovesx/nba-score-box/playbyplay"
+	"github.com/piglovesx/nba-score-box/play"
 )
 
 const nba_score_box_url string = "https://in.global.nba.com/stats2/scores/daily.json?countryCode=IN&locale=en&tz=%2B8"
 
-type daily struct {
+type DailyGame struct {
 	Payload playload `json:"payload"`
 }
 
@@ -57,8 +57,8 @@ type profile struct {
 }
 
 func main() {
-	readable_data := &daily{}
-	pbps := []*playbyplay.Play_by_play{}
+	readable_data := &DailyGame{}
+	pbps := []*play.Play{}
 	writer := uilive.New()
 	writer.Start()
 	defer writer.Stop()
@@ -69,12 +69,12 @@ func main() {
 	}
 }
 
-func print_data(readable_data *daily, writer *uilive.Writer, pbps []*playbyplay.Play_by_play) {
-	retriveDailyData(readable_data)
-	for i, v := range readable_data.Payload.All_date.Games {
+func print_data(d *DailyGame, writer *uilive.Writer, pbps []*play.Play) {
+	d.retriveDailyData()
+	for i, v := range d.Payload.All_date.Games {
 		if len(pbps) <= i {
-			pbps = append(pbps, &playbyplay.Play_by_play{})
-			playbyplay.RetrivePlayByPlay(v.Profile.GameId, v.Boxscore.Period, pbps[i])
+			pbps = append(pbps, &play.Play{})
+			pbps[i].RetrivePlayByPlay(v.Profile.GameId, v.Boxscore.Period)
 		}
 		if v.SeriesText != "" {
 			temp, _ := strconv.Atoi(v.Profile.StartTime)
@@ -85,7 +85,7 @@ func print_data(readable_data *daily, writer *uilive.Writer, pbps []*playbyplay.
 	}
 }
 
-func retriveDailyData(d *daily) {
+func (d *DailyGame) retriveDailyData() {
 	resp, err := http.Get(nba_score_box_url)
 
 	if err != nil {

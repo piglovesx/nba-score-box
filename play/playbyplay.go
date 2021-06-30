@@ -1,4 +1,4 @@
-package playbyplay
+package play
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 
 const nba_play_by_play_url string = "https://in.global.nba.com/stats2/game/playbyplay.json?"
 
-type Play_by_play struct {
+type Play struct {
 	Payload playload_for_pbp `json:"payload"`
 }
 
@@ -28,7 +28,7 @@ type event struct {
 	Description string `json:"description"`
 }
 
-func RetrivePlayByPlay(gameId string, period string, pbp *Play_by_play) {
+func (pbp *Play) RetrivePlayByPlay(gameId string, period string) {
 	params := url.Values{
 		"gameId": {gameId},
 		"period": {period},
