@@ -2,6 +2,7 @@ package play
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -26,6 +27,10 @@ type event struct {
 	AwayScore   string `json:"awayScore"`
 	HomeScore   string `json:"homeScore"`
 	Description string `json:"description"`
+}
+
+func (p Play) Print(writer io.Writer) {
+	fmt.Fprintf(writer, "%s\n\n", p.Payload.PlayByPlays[0].Events[0].Description)
 }
 
 func (pbp *Play) RetrivePlayByPlay(gameId string, period string) {
