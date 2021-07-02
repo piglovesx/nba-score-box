@@ -8,12 +8,26 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/piglovesx/nba-score-box/play"
 )
 
 const nba_score_box_url string = "https://in.global.nba.com/stats2/scores/daily.json?countryCode=IN&locale=en&tz=%2B8"
 
 type DailyGame struct {
 	Payload playload `json:"payload"`
+	T       *time.Ticker
+}
+
+func (d *DailyGame) Print() {
+	go func() {
+		for range d.T.C {
+			d.RetriveDailyData()
+			for _, g := range d.Payload.All_date.Games {
+				g.Print()
+			}
+		}
+	}()
 }
 
 type playload struct {
@@ -21,8 +35,8 @@ type playload struct {
 }
 
 type all_date struct {
-	Games     []game `json:"games"`
-	GameCount string `json:"gameCount"`
+	Games     []*game `json:"games"`
+	GameCount string  `json:"gameCount"`
 }
 
 type game struct {
@@ -31,6 +45,7 @@ type game struct {
 	AwayTeam   team         `json:"awayTeam"`
 	SeriesText string       `json:"seriesText"`
 	Profile    game_profile `json:"profile"`
+	Plays      *play.Play
 }
 
 type game_profile struct {
@@ -53,13 +68,26 @@ type profile struct {
 	Abbr string `json:"abbr"`
 }
 
-func (v game) Print(writer io.Writer) {
-	if v.SeriesText != "" {
-		temp, _ := strconv.Atoi(v.Profile.StartTime)
-		fmt.Fprintf(writer, "%s (%s)\n", v.SeriesText, time.Unix(0, int64(temp)*int64(time.Millisecond)).Format(time.Kitchen))
+func (g *game) Print() {
+	if g.isStart() && !g.Plays.Started {
+		g.Plays.Print(g.Profile.GameId, g.Boxscore.Period)
 	}
-	fmt.Fprintf(writer, "%s %d    -    %s %d  (Period:%s Time:%s)\n", v.AwayTeam.Profile.Abbr, v.Boxscore.AwayScore, v.HomeTeam.Profile.Abbr, v.Boxscore.HomeScore, v.Boxscore.Period, v.Boxscore.PeriodClock)
+}
 
+func (g *game) String() string {
+	result := ""
+	if g.SeriesText != "" {
+		temp, _ := strconv.Atoi(g.Profile.StartTime)
+		result = result + fmt.Sprintf("%s (%s)\n", g.SeriesText, time.Unix(0, int64(temp)*int64(time.Millisecond)).Format(time.Kitchen))
+	}
+	result = result + fmt.Sprintf("%s %d    -    %s %d  (Period:%s Time:%s)\n", g.AwayTeam.Profile.Abbr, g.Boxscore.AwayScore, g.HomeTeam.Profile.Abbr, g.Boxscore.HomeScore, g.Boxscore.Period, g.Boxscore.PeriodClock)
+	result = result + g.Plays.String()
+	return result
+}
+
+func (g game) isStart() bool {
+	t, _ := strconv.Atoi(g.Profile.StartTime)
+	return time.Now().Unix()*1000 > int64(t)
 }
 
 func (d *DailyGame) RetriveDailyData() {
